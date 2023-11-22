@@ -5,13 +5,12 @@ import android.content.Intent
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.widget.Toast
+import android.telephony.SmsManager
 
 class MessageService : Service() {
     private lateinit var message: String
+    private lateinit var phoneNumber: String
     private var minutes: Int = 0
-    private lateinit var userInput: String
-    private lateinit var broadcastIntent: Intent
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var runnable: Runnable
 
@@ -22,8 +21,8 @@ class MessageService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
             message = intent.getStringExtra("message") ?: ""
+            phoneNumber = intent.getStringExtra("phoneNumber") ?: ""
             minutes = intent.getIntExtra("minutes", 0)
-            userInput = intent.getStringExtra("userInput") ?: ""
 
             startSendingMessages()
         }
@@ -34,8 +33,7 @@ class MessageService : Service() {
     private fun startSendingMessages() {
         runnable = object : Runnable {
             override fun run() {
-                val toastMessage = "$message: $userInput"
-                showToast(toastMessage)
+                sendSMSMessage(phoneNumber, "$message: Are we there yet?")
                 handler.postDelayed(this, (minutes * 60 * 1000).toLong())
             }
         }
@@ -43,10 +41,9 @@ class MessageService : Service() {
         handler.post(runnable)
     }
 
-    private fun showToast(message: String) {
-        broadcastIntent = Intent("SHOW_TOAST")
-        broadcastIntent.putExtra("message", message)
-        sendBroadcast(broadcastIntent)
+    private fun sendSMSMessage(phoneNumber: String, message: String) {
+        val smsManager = SmsManager.getDefault()
+        smsManager.sendTextMessage(phoneNumber, null, message, null, null)
     }
 
     override fun onDestroy() {
